@@ -66,8 +66,42 @@ impl Analysis<Math> for MathAnalysis {
     }
 }
 
+macro_rules! flat_vec {
+    (flat $elem:expr $(,)?) => {
+        $elem
+    };
+    ($elem:expr $(,)?) => {
+        vec![$elem]
+    };
+    (
+        flat $elem:expr ,
+        $($rest:tt)+
+    )  => {{
+        let mut t = $elem;
+        t.extend(flat_vec!($($rest)+));
+        t
+    }};
+    (
+        $elem:expr ,
+        $($rest:tt)+
+     ) => {{
+        let mut t = vec![$elem];
+        t.extend(flat_vec!($($rest)+));
+        t
+    }};
+}
+
+#[test]
+fn test_flat_vec() {
+    assert_eq!(flat_vec!(1), vec![1]);
+    assert_eq!(flat_vec!(1, 2), vec![1, 2]);
+    assert_eq!(flat_vec!(1, 2, 3), vec![1, 2, 3]);
+    assert_eq!(flat_vec!(flat vec![1], 2), vec![1, 2]);
+    assert_eq!(flat_vec!(1, flat vec![2]), vec![1, 2]);
+}
+
 pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
-    let lr = vec![
+    flat_vec![
         // add
         rw!("[add] commutative law"; "(+ ?a ?b)" => "(+ ?b ?a)"),
         rw!("[add] associative property"; "(+ ?a (+ ?b ?c))" => "(+ (+ ?a ?b) ?c)"),
@@ -82,7 +116,11 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         // mul
         rw!("[mul] commutative law"; "(* ?a ?b)" => "(* ?b ?a)"),
         rw!("[mul] associative property"; "(* ?a (* ?b ?c))" => "(* (* ?a ?b) ?c)"),
-        rw!("mul-0"; "(* ?a 0)" => "0"),
+        rw!("[mul] identity"; "(* ?a 1)" => "?a"),
+        rw!("[mul] zero"; "(* ?a 0)" => "0"),
+        // mul and others
+        rw!("[mul] distributive add"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
+        rw!("[mul] distributive sub"; "(* ?a (- ?b ?c))" => "(- (* ?a ?b) (* ?a ?c))"),
         /*
         // div
         rw!("div-1"; "(/ ?a 1)" => "?a"),
@@ -100,10 +138,9 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("mul-add-distributive"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
         rw!("mul-sub-distributive"; "(* ?a (- ?b ?c))" => "(- (* ?a ?b) (* ?a ?c))"),
         */
-    ];
+    ]
     // lr.extend(rw!("mul-1"; "(* ?a 1)" <=> "?a"));
     // lr.extend(rw!("expt-1"; "(expt ?a 1)" <=> "?a"));
-    lr
 }
 
 fn is_not_zero(var: &'static str) -> impl Fn(&mut EGraph<Math, MathAnalysis>, Id, &Subst) -> bool {
@@ -121,10 +158,11 @@ test_fn! {math_add_assoc, rules(), "(+ (+ x y) z)" => "(+ x (+ y z))"}
 test_fn! {math_add_id, rules(), "(+ x 0)" => "x"}
 test_fn! {math_add_inv, rules(), "(+ x (- y x))" => "y"}
 
-test_fn! {sub_cancel, rules(), "(- a (+ a b))" => "b"}
+test_fn! {sub_cancel, rules(), "(- (+ a b) a)" => "b"}
 
-// test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
-// test_fn! {math_partial_eval, rules(), "(* 4 (* 2 x))" => "(* 8 x)"}
+// const prop
+test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
+test_fn! {math_partial_eval, rules(), "(* 4 (* 2 x))" => "(* 8 x)"}
 
 /// Formula rewriter using egraph.
 ///
