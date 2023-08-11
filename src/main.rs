@@ -71,6 +71,9 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
 test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
 test_fn! {math_partial_eval, rules(), "(* 4 (* 2 x))" => "(* 8 x)"}
 
+/// Formula rewriter using egraph
+///
+/// Supported operations: +, -, *
 #[derive(Debug, Parser)]
 struct Opts {
     formula: RecExpr<Math>,
