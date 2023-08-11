@@ -8,6 +8,7 @@ define_language! {
         "+" = Add([Id; 2]),
         "-" = Sub([Id; 2]),
         "*" = Mul([Id; 2]),
+        // "/" = Div([Id; 2]),
         Symbol(Symbol),
     }
 }
@@ -60,6 +61,8 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("mul-comm"; "(* ?a ?b)" => "(* ?b ?a)"),
         rw!("mul-assoc"; "(* ?a (* ?b ?c))" => "(* (* ?a ?b) ?c)"),
         rw!("mul-0"; "(* ?a 0)" => "0"),
+        // Just for fun
+        rw!("ii"; "(* i i)" => "-1"),
         // TODO categorize more better
         rw!("mul-add"; "(+ (* ?a ?x) (* ?b ?x))" => "(* (+ ?a ?b) ?x)"),
         rw!("mul-sub"; "(- (* ?a ?x) (* ?b ?x))" => "(* (- ?a ?b) ?x)"),
@@ -71,7 +74,7 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
 test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
 test_fn! {math_partial_eval, rules(), "(* 4 (* 2 x))" => "(* 8 x)"}
 
-/// Formula rewriter using egraph
+/// Formula rewriter using egraph.
 ///
 /// Supported operations: +, -, *
 #[derive(Debug, Parser)]
