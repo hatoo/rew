@@ -72,7 +72,6 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("add-comm"; "(+ ?a ?b)" => "(+ ?b ?a)"),
         rw!("add-assoc"; "(+ ?a (+ ?b ?c))" => "(+ (+ ?a ?b) ?c)"),
         rw!("add-0"; "(+ ?a 0)" => "?a"),
-        rw!("add-same"; "(+ ?a ?a)" => "(* ?a 2)"),
         // sub
         rw!("sub-0"; "(- ?a 0)" => "?a"),
         rw!("sub-same"; "(- ?a ?a)" => "0"),
@@ -86,16 +85,18 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("div-same"; "(/ ?a ?a)" => "1" if is_not_zero("?a")),
         // expt
         rw!("expt-0"; "(expt ?a 0)" => "1"),
-        rw!("expt-1"; "(expt ?a 1)" => "?a"),
-        rw!("expt-2"; "(* ?a ?a)" => "(expt ?a 2)"),
         rw!("expt-mul"; "(* (expt ?a ?b) (expt ?a ?c))" => "(expt ?a (+ ?b ?c))"),
         // Just for fun
         rw!("ii"; "(* i i)" => "-1"),
         // TODO categorize more better
         rw!("mul-add"; "(+ (* ?a ?x) (* ?b ?x))" => "(* (+ ?a ?b) ?x)"),
         rw!("mul-sub"; "(- (* ?a ?x) (* ?b ?x))" => "(* (- ?a ?b) ?x)"),
+        // distributive
+        rw!("mul-add-distributive"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
+        rw!("mul-sub-distributive"; "(* ?a (- ?b ?c))" => "(- (* ?a ?b) (* ?a ?c))"),
     ];
     lr.extend(rw!("mul-1"; "(* ?a 1)" <=> "?a"));
+    lr.extend(rw!("expt-1"; "(expt ?a 1)" <=> "?a"));
     lr
 }
 
@@ -110,7 +111,7 @@ test_fn! {math_partial_eval, rules(), "(* 4 (* 2 x))" => "(* 8 x)"}
 
 /// Formula rewriter using egraph.
 ///
-/// Supported operations: +, -, *, /
+/// Supported operations: +, -, *, /, expt
 #[derive(Debug, Parser)]
 struct Opts {
     formula: RecExpr<Math>,
