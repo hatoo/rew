@@ -3,7 +3,7 @@ use egg::{rewrite as rw, *};
 use num_rational::BigRational;
 
 define_language! {
-    enum Math {
+    pub enum Math {
         Num(BigRational),
         "+" = Add([Id; 2]),
         "*" = Mul([Id; 2]),
@@ -12,7 +12,7 @@ define_language! {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-struct MathAnalysis;
+pub struct MathAnalysis;
 impl Analysis<Math> for MathAnalysis {
     type Data = Option<BigRational>;
     fn merge(&mut self, a: &mut Self::Data, b: Self::Data) -> DidMerge {
@@ -44,7 +44,7 @@ impl Analysis<Math> for MathAnalysis {
     }
 }
 
-fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
+pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
     vec![
         // add
         rw!("add-comm"; "(+ ?a ?b)" => "(+ ?b ?a)"),
@@ -58,6 +58,9 @@ fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("mul-0"; "(* ?a 0)" => "0"),
     ]
 }
+
+test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
+test_fn! {math_partial_eval, rules(), "(* 4 (* 2 x))" => "(* 8 x)"}
 
 #[derive(Debug, Parser)]
 struct Opts {
