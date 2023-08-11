@@ -2,6 +2,7 @@ use clap::Parser;
 use egg::{rewrite as rw, *};
 use num::Zero;
 use num_rational::BigRational;
+use num_traits::pow::Pow;
 
 define_language! {
     pub enum Math {
@@ -10,6 +11,7 @@ define_language! {
         "-" = Sub([Id; 2]),
         "*" = Mul([Id; 2]),
         "/" = Div([Id; 2]),
+        "expt" = Expt([Id; 2]),
         Symbol(Symbol),
     }
 }
@@ -44,6 +46,14 @@ impl Analysis<Math> for MathAnalysis {
                     Some(c(a)? / b)
                 }
             }
+            Math::Expt([a, b]) => {
+                let b = c(b)?;
+                if b.is_integer() {
+                    Some(c(a)?.pow(b.to_integer()))
+                } else {
+                    None
+                }
+            }
             Math::Symbol(_) => None,
         }
     }
@@ -74,6 +84,11 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("div-1"; "(/ ?a 1)" => "?a"),
         rw!("div-0"; "(/ 0 ?a)" => "0" if is_not_zero("?a")),
         rw!("div-same"; "(/ ?a ?a)" => "1" if is_not_zero("?a")),
+        // expt
+        rw!("expt-0"; "(expt ?a 0)" => "1"),
+        rw!("expt-1"; "(expt ?a 1)" => "?a"),
+        rw!("expt-2"; "(* ?a ?a)" => "(expt ?a 2)"),
+        rw!("expt-mul"; "(* (expt ?a ?b) (expt ?a ?c))" => "(expt ?a (+ ?b ?c))"),
         // Just for fun
         rw!("ii"; "(* i i)" => "-1"),
         // TODO categorize more better

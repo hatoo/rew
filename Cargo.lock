@@ -387,6 +387,7 @@ dependencies = [
  "egg",
  "num",
  "num-rational",
+ "num-traits",
 ]
 
 [[package]]
