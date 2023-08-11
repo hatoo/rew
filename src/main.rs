@@ -67,18 +67,23 @@ impl Analysis<Math> for MathAnalysis {
 }
 
 pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
-    let mut lr = vec![
+    let lr = vec![
         // add
-        rw!("add-comm"; "(+ ?a ?b)" => "(+ ?b ?a)"),
-        rw!("add-assoc"; "(+ ?a (+ ?b ?c))" => "(+ (+ ?a ?b) ?c)"),
-        rw!("add-0"; "(+ ?a 0)" => "?a"),
+        rw!("[add] commutative law"; "(+ ?a ?b)" => "(+ ?b ?a)"),
+        rw!("[add] associative property"; "(+ ?a (+ ?b ?c))" => "(+ (+ ?a ?b) ?c)"),
+        rw!("[add] identity"; "(+ ?a 0)" => "?a"),
         // sub
-        rw!("sub-0"; "(- ?a 0)" => "?a"),
-        rw!("sub-same"; "(- ?a ?a)" => "0"),
+        rw!("[sub] indentity"; "(- ?a 0)" => "?a"),
+        rw!("[sub] inverse"; "(- ?a ?a)" => "0"),
+        rw!("[sub] exchange"; "(- (- ?a ?b) ?c)" => "(- (- ?a ?c) ?b)"),
+        // add and sub
+        rw!("[add, sub] cancel 1"; "(+ ?a (- ?b ?a))" => "?b"),
+        rw!("[add, sub] cancel 2"; "(- (+ ?a ?b) ?a)" => "?b"),
         // mul
-        rw!("mul-comm"; "(* ?a ?b)" => "(* ?b ?a)"),
-        rw!("mul-assoc"; "(* ?a (* ?b ?c))" => "(* (* ?a ?b) ?c)"),
+        rw!("[mul] commutative law"; "(* ?a ?b)" => "(* ?b ?a)"),
+        rw!("[mul] associative property"; "(* ?a (* ?b ?c))" => "(* (* ?a ?b) ?c)"),
         rw!("mul-0"; "(* ?a 0)" => "0"),
+        /*
         // div
         rw!("div-1"; "(/ ?a 1)" => "?a"),
         rw!("div-0"; "(/ 0 ?a)" => "0" if is_not_zero("?a")),
@@ -94,9 +99,10 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         // distributive
         rw!("mul-add-distributive"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
         rw!("mul-sub-distributive"; "(* ?a (- ?b ?c))" => "(- (* ?a ?b) (* ?a ?c))"),
+        */
     ];
-    lr.extend(rw!("mul-1"; "(* ?a 1)" <=> "?a"));
-    lr.extend(rw!("expt-1"; "(expt ?a 1)" <=> "?a"));
+    // lr.extend(rw!("mul-1"; "(* ?a 1)" <=> "?a"));
+    // lr.extend(rw!("expt-1"; "(expt ?a 1)" <=> "?a"));
     lr
 }
 
@@ -106,8 +112,19 @@ fn is_not_zero(var: &'static str) -> impl Fn(&mut EGraph<Math, MathAnalysis>, Id
     move |egraph, _, subst| !egraph[subst[var]].nodes.contains(&zero)
 }
 
-test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
-test_fn! {math_partial_eval, rules(), "(* 4 (* 2 x))" => "(* 8 x)"}
+// add
+// Currently, the following rules are directly written in the rules() but perhaps we can describe it in a less number of rules.
+test_fn! {math_add_const, rules(), "(+ 1 2)" => "3"}
+// https://ja.wikipedia.org/wiki/%E5%8A%A0%E6%B3%95
+test_fn! {math_add_comm, rules(), "(+ x y)" => "(+ y x)"}
+test_fn! {math_add_assoc, rules(), "(+ (+ x y) z)" => "(+ x (+ y z))"}
+test_fn! {math_add_id, rules(), "(+ x 0)" => "x"}
+test_fn! {math_add_inv, rules(), "(+ x (- y x))" => "y"}
+
+test_fn! {sub_cancel, rules(), "(- a (+ a b))" => "b"}
+
+// test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
+// test_fn! {math_partial_eval, rules(), "(* 4 (* 2 x))" => "(* 8 x)"}
 
 /// Formula rewriter using egraph.
 ///
