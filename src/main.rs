@@ -6,6 +6,7 @@ define_language! {
     pub enum Math {
         Num(BigRational),
         "+" = Add([Id; 2]),
+        "-" = Sub([Id; 2]),
         "*" = Mul([Id; 2]),
         Symbol(Symbol),
     }
@@ -31,8 +32,9 @@ impl Analysis<Math> for MathAnalysis {
         match enode {
             Math::Num(n) => Some(n.clone()),
             Math::Add([a, b]) => Some(c(a)? + c(b)?),
+            Math::Sub([a, b]) => Some(c(a)? - c(b)?),
             Math::Mul([a, b]) => Some(c(a)? * c(b)?),
-            _ => None,
+            Math::Symbol(_) => None,
         }
     }
 
@@ -45,18 +47,25 @@ impl Analysis<Math> for MathAnalysis {
 }
 
 pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
-    vec![
+    let mut lr = vec![
         // add
         rw!("add-comm"; "(+ ?a ?b)" => "(+ ?b ?a)"),
         rw!("add-assoc"; "(+ ?a (+ ?b ?c))" => "(+ (+ ?a ?b) ?c)"),
         rw!("add-0"; "(+ ?a 0)" => "?a"),
         rw!("add-same"; "(+ ?a ?a)" => "(* ?a 2)"),
+        // sub
+        rw!("sub-0"; "(- ?a 0)" => "?a"),
+        rw!("sub-same"; "(- ?a ?a)" => "0"),
         // mul
         rw!("mul-comm"; "(* ?a ?b)" => "(* ?b ?a)"),
         rw!("mul-assoc"; "(* ?a (* ?b ?c))" => "(* (* ?a ?b) ?c)"),
-        rw!("mul-1"; "(* ?a 1)" => "?a"),
         rw!("mul-0"; "(* ?a 0)" => "0"),
-    ]
+        // TODO categorize more better
+        rw!("mul-add"; "(+ (* ?a ?x) (* ?b ?x))" => "(* (+ ?a ?b) ?x)"),
+        rw!("mul-sub"; "(- (* ?a ?x) (* ?b ?x))" => "(* (- ?a ?b) ?x)"),
+    ];
+    lr.extend(rw!("mul-1"; "(* ?a 1)" <=> "?a"));
+    lr
 }
 
 test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
