@@ -106,17 +106,18 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("[add] commutative law"; "(+ ?a ?b)" => "(+ ?b ?a)"),
         rw!("[add] associative property"; "(+ ?a (+ ?b ?c))" => "(+ (+ ?a ?b) ?c)"),
         rw!("[add] identity"; "(+ ?a 0)" => "?a"),
-        // sub
-        rw!("[sub] to add"; "(- ?a ?b)" => "(+ ?a (- 0 ?b))"),
-        rw!("[sub] cancel"; "(+ ?a (- ?b ?a))" => "?b"),
-        rw!("[sub] inv inv"; "(- 0 (- 0 ?a))" => "?a"),
         // mul
         rw!("[mul] commutative law"; "(* ?a ?b)" => "(* ?b ?a)"),
         rw!("[mul] associative property"; "(* ?a (* ?b ?c))" => "(* (* ?a ?b) ?c)"),
-        rw!("[mul] identity"; "(* ?a 1)" => "?a"),
+        flat rw!("[mul] identity"; "(* ?a 1)" <=> "?a"),
         rw!("[mul] zero"; "(* ?a 0)" => "0"),
+        rw!("[mul] distribution"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
+        // sub
+        rw!("[sub] to mul"; "(- ?a ?b)" => "(+ ?a (* -1 ?b))"),
+        rw!("[sub] cancel"; "(+ ?a (* -1 ?a))" => "0"),
+        // rw!("[sub] cancel"; "(+ ?a (- ?b ?a))" => "?b"),
+        // rw!("[sub] inv inv"; "(- 0 (- 0 ?a))" => "?a"),
         // mul and others
-        rw!("[mul] distributive add"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
         /*
         // div
         rw!("div-1"; "(/ ?a 1)" => "?a"),
@@ -151,6 +152,8 @@ test_fn! {math_add_const, rules(), "(+ 1 2)" => "3"}
 test_fn! {math_add_comm, rules(), "(+ x y)" => "(+ y x)"}
 test_fn! {math_add_assoc_lr, rules(), "(+ (+ x y) z)" => "(+ x (+ y z))"}
 test_fn! {math_add_assoc_rl, rules(), "(+ x (+ y z))" => "(+ (+ x y) z)"}
+test_fn! {math_mul_assoc_lr, rules(), "(* (* x y) z)" => "(* x (* y z))"}
+test_fn! {math_mul_assoc_rl, rules(), "(* x (* y z))" => "(* (* x y) z)"}
 test_fn! {math_add_id, rules(), "(+ x 0)" => "x"}
 test_fn! {math_add_inv, rules(), "(+ x (- y x))" => "y"}
 
