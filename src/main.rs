@@ -125,36 +125,19 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         flat rw!("[expt] identity"; "(expt ?a 1)" <=> "?a"),
         rw!("[expt] zero"; "(expt ?a 0)" => "1"),
         rw!("[expt] mul"; "(* (expt ?a ?b) (expt ?a ?c))" => "(expt ?a (+ ?b ?c))"),
-        // rw!("[sub] cancel"; "(+ ?a (- ?b ?a))" => "?b"),
-        // rw!("[sub] inv inv"; "(- 0 (- 0 ?a))" => "?a"),
-        // mul and others
-        /*
-        // div
-        rw!("div-1"; "(/ ?a 1)" => "?a"),
-        rw!("div-0"; "(/ 0 ?a)" => "0" if is_not_zero("?a")),
-        rw!("div-same"; "(/ ?a ?a)" => "1" if is_not_zero("?a")),
-        // expt
-        rw!("expt-0"; "(expt ?a 0)" => "1"),
-        rw!("expt-mul"; "(* (expt ?a ?b) (expt ?a ?c))" => "(expt ?a (+ ?b ?c))"),
-        // Just for fun
+
+        // complex
         rw!("ii"; "(* i i)" => "-1"),
-        // TODO categorize more better
-        rw!("mul-add"; "(+ (* ?a ?x) (* ?b ?x))" => "(* (+ ?a ?b) ?x)"),
-        rw!("mul-sub"; "(- (* ?a ?x) (* ?b ?x))" => "(* (- ?a ?b) ?x)"),
-        // distributive
-        rw!("mul-add-distributive"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
-        rw!("mul-sub-distributive"; "(* ?a (- ?b ?c))" => "(- (* ?a ?b) (* ?a ?c))"),
-        */
     ]
-    // lr.extend(rw!("mul-1"; "(* ?a 1)" <=> "?a"));
-    // lr.extend(rw!("expt-1"; "(expt ?a 1)" <=> "?a"));
 }
 
+/*
 fn is_not_zero(var: &'static str) -> impl Fn(&mut EGraph<Math, MathAnalysis>, Id, &Subst) -> bool {
     let var = var.parse().unwrap();
     let zero = Math::Num(BigRational::zero());
     move |egraph, _, subst| !egraph[subst[var]].nodes.contains(&zero)
 }
+*/
 
 // add
 // Currently, the following rules are directly written in the rules() but perhaps we can describe it in a less number of rules.
@@ -175,6 +158,7 @@ test_fn! {math_sub_sub2, rules(), "(- b (- 0 a))" => "(+ a b)"}
 test_fn! {math_sub_from_mul, rules(), "(+ ?a (* -1 ?b))" => "(- ?a ?b)"}
 
 test_fn! {math_div_cancel, rules(), "(/ x x)" => "1"}
+test_fn! {math_div_2, rules(), "(/ (* x x) x)" => "x"}
 
 // const prop
 test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
