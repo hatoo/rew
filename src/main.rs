@@ -107,12 +107,9 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("[add] associative property"; "(+ ?a (+ ?b ?c))" => "(+ (+ ?a ?b) ?c)"),
         rw!("[add] identity"; "(+ ?a 0)" => "?a"),
         // sub
-        rw!("[sub] indentity"; "(- ?a 0)" => "?a"),
-        rw!("[sub] inverse"; "(- ?a ?a)" => "0"),
-        rw!("[sub] exchange"; "(- (- ?a ?b) ?c)" => "(- (- ?a ?c) ?b)"),
-        // add and sub
-        rw!("[add, sub] cancel 1"; "(+ ?a (- ?b ?a))" => "?b"),
-        rw!("[add, sub] cancel 2"; "(- (+ ?a ?b) ?a)" => "?b"),
+        rw!("[sub] to add"; "(- ?a ?b)" => "(+ ?a (- 0 ?b))"),
+        rw!("[sub] cancel"; "(+ ?a (- ?b ?a))" => "?b"),
+        rw!("[sub] inv inv"; "(- 0 (- 0 ?a))" => "?a"),
         // mul
         rw!("[mul] commutative law"; "(* ?a ?b)" => "(* ?b ?a)"),
         rw!("[mul] associative property"; "(* ?a (* ?b ?c))" => "(* (* ?a ?b) ?c)"),
@@ -120,7 +117,6 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("[mul] zero"; "(* ?a 0)" => "0"),
         // mul and others
         rw!("[mul] distributive add"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
-        rw!("[mul] distributive sub"; "(* ?a (- ?b ?c))" => "(- (* ?a ?b) (* ?a ?c))"),
         /*
         // div
         rw!("div-1"; "(/ ?a 1)" => "?a"),
@@ -158,7 +154,10 @@ test_fn! {math_add_assoc, rules(), "(+ (+ x y) z)" => "(+ x (+ y z))"}
 test_fn! {math_add_id, rules(), "(+ x 0)" => "x"}
 test_fn! {math_add_inv, rules(), "(+ x (- y x))" => "y"}
 
-test_fn! {sub_cancel, rules(), "(- (+ a b) a)" => "b"}
+test_fn! {math_sub_cancel, rules(), "(- (+ a b) a)" => "b"}
+test_fn! {math_sub_id, rules(), "(- a 0)" => "a"}
+test_fn! {math_sub_sub, rules(), "(- 0 (- 0 a))" => "a"}
+test_fn! {math_sub_sub2, rules(), "(- b (- 0 a))" => "(+ a b)"}
 
 // const prop
 test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
