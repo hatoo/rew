@@ -9,6 +9,8 @@ define_language! {
         Num(BigRational),
         "+" = Add([Id; 2]),
         "-" = Sub([Id; 2]),
+        // Short hand to unary minus
+        "-" = Minus(Id),
         "*" = Mul([Id; 2]),
         "/" = Div([Id; 2]),
         "expt" = Expt([Id; 2]),
@@ -37,6 +39,7 @@ impl Analysis<Math> for MathAnalysis {
             Math::Num(n) => Some(n.clone()),
             Math::Add([a, b]) => Some(c(a)? + c(b)?),
             Math::Sub([a, b]) => Some(c(a)? - c(b)?),
+            Math::Minus(a) => Some(-c(a)?),
             Math::Mul([a, b]) => Some(c(a)? * c(b)?),
             Math::Div([a, b]) => {
                 let b = c(b)?;
@@ -113,8 +116,9 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("[mul] zero"; "(* ?a 0)" => "0"),
         rw!("[mul] distribution"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
         // sub
-        rw!("[sub] to mul"; "(- ?a ?b)" => "(+ ?a (* -1 ?b))"),
+        flat rw!("[sub] to mul"; "(- ?a ?b)" <=> "(+ ?a (* -1 ?b))"),
         rw!("[sub] cancel"; "(+ ?a (* -1 ?a))" => "0"),
+        flat rw!("[sub] shorten"; "(- 0 ?a)" <=> "(- ?a)"),
         // rw!("[sub] cancel"; "(+ ?a (- ?b ?a))" => "?b"),
         // rw!("[sub] inv inv"; "(- 0 (- 0 ?a))" => "?a"),
         // mul and others
@@ -162,6 +166,7 @@ test_fn! {math_sub_cancel2, rules(), "(- (+ (+ a b) (+ c d)) a)" => "(+ b (+ c d
 test_fn! {math_sub_id, rules(), "(- a 0)" => "a"}
 test_fn! {math_sub_sub, rules(), "(- 0 (- 0 a))" => "a"}
 test_fn! {math_sub_sub2, rules(), "(- b (- 0 a))" => "(+ a b)"}
+test_fn! {math_sub_from_mul, rules(), "(+ ?a (* -1 ?b))" => "(- ?a ?b)"}
 
 // const prop
 test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
