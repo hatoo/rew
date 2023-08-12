@@ -1,5 +1,6 @@
 use clap::Parser;
 use egg::{rewrite as rw, *};
+use flat_vec::flat_vec;
 use num::Zero;
 use num_rational::BigRational;
 use num_traits::pow::Pow;
@@ -71,40 +72,6 @@ impl Analysis<Math> for MathAnalysis {
             egraph.union(id, const_id);
         }
     }
-}
-
-macro_rules! flat_vec {
-    (flat $elem:expr $(,)?) => {
-        $elem
-    };
-    ($elem:expr $(,)?) => {
-        vec![$elem]
-    };
-    (
-        flat $elem:expr ,
-        $($rest:tt)+
-    )  => {{
-        let mut t = $elem;
-        t.extend(flat_vec!($($rest)+));
-        t
-    }};
-    (
-        $elem:expr ,
-        $($rest:tt)+
-     ) => {{
-        let mut t = vec![$elem];
-        t.extend(flat_vec!($($rest)+));
-        t
-    }};
-}
-
-#[test]
-fn test_flat_vec() {
-    assert_eq!(flat_vec!(1), vec![1]);
-    assert_eq!(flat_vec!(1, 2), vec![1, 2]);
-    assert_eq!(flat_vec!(1, 2, 3), vec![1, 2, 3]);
-    assert_eq!(flat_vec!(flat vec![1], 2), vec![1, 2]);
-    assert_eq!(flat_vec!(1, flat vec![2]), vec![1, 2]);
 }
 
 pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {

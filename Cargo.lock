@@ -191,6 +191,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "flat_vec"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b48317a912b620addec1d59ff775003329cb2007d945faac3dcf974c472c3de"
+
+[[package]]
 name = "fxhash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -385,6 +391,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "egg",
+ "flat_vec",
  "num",
  "num-rational",
  "num-traits",
