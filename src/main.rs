@@ -14,6 +14,8 @@ define_language! {
         "*" = Mul([Id; 2]),
         "/" = Div([Id; 2]),
         "expt" = Expt([Id; 2]),
+        // Short hand to expt 2
+        "sqrt" = Sqrt(Id),
         Symbol(Symbol),
     }
 }
@@ -58,6 +60,7 @@ impl Analysis<Math> for MathAnalysis {
                     None
                 }
             }
+            Math::Sqrt(_) => None,
             Math::Symbol(_) => None,
         }
     }
@@ -125,9 +128,11 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         flat rw!("[expt] identity"; "(expt ?a 1)" <=> "?a"),
         rw!("[expt] zero"; "(expt ?a 0)" => "1"),
         rw!("[expt] mul"; "(* (expt ?a ?b) (expt ?a ?c))" => "(expt ?a (+ ?b ?c))"),
+        // sqrt
+        flat rw!("[sqrt] to expt"; "(sqrt ?a)" <=> "(expt ?a 1/2)"),
 
         // complex
-        rw!("ii"; "(* i i)" => "-1"),
+        flat rw!("i define"; "(expt -1 1/2)" <=> "i"),
     ]
 }
 
@@ -159,6 +164,10 @@ test_fn! {math_sub_from_mul, rules(), "(+ ?a (* -1 ?b))" => "(- ?a ?b)"}
 
 test_fn! {math_div_cancel, rules(), "(/ x x)" => "1"}
 test_fn! {math_div_2, rules(), "(/ (* x x) x)" => "x"}
+
+test_fn! {math_expt_mul, rules(), "(* (* x x) (* x x))" => "(expt x 4)"}
+
+test_fn! {math_complex_i, rules(), "(* i i)" => "-1"}
 
 // const prop
 test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
