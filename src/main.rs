@@ -50,9 +50,10 @@ impl Analysis<Math> for MathAnalysis {
                 }
             }
             Math::Expt([a, b]) => {
+                let a = c(a)?;
                 let b = c(b)?;
-                if b.is_integer() {
-                    Some(c(a)?.pow(b.to_integer()))
+                if !(a.is_zero() && b < BigRational::zero()) && b.is_integer() {
+                    Some(a.pow(b.to_integer()))
                 } else {
                     None
                 }
@@ -118,6 +119,12 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         // sub
         flat rw!("[sub] to mul"; "(- ?a ?b)" <=> "(+ ?a (* -1 ?b))"),
         flat rw!("[sub] shorten"; "(- 0 ?a)" <=> "(- ?a)"),
+        // div
+        flat rw!("[div] to expt"; "(/ ?a ?b)" <=> "(* ?a (expt ?b -1))"),
+        // expt
+        flat rw!("[expt] identity"; "(expt ?a 1)" <=> "?a"),
+        rw!("[expt] zero"; "(expt ?a 0)" => "1"),
+        rw!("[expt] mul"; "(* (expt ?a ?b) (expt ?a ?c))" => "(expt ?a (+ ?b ?c))"),
         // rw!("[sub] cancel"; "(+ ?a (- ?b ?a))" => "?b"),
         // rw!("[sub] inv inv"; "(- 0 (- 0 ?a))" => "?a"),
         // mul and others
@@ -166,6 +173,8 @@ test_fn! {math_sub_id, rules(), "(- a 0)" => "a"}
 test_fn! {math_sub_sub, rules(), "(- 0 (- 0 a))" => "a"}
 test_fn! {math_sub_sub2, rules(), "(- b (- 0 a))" => "(+ a b)"}
 test_fn! {math_sub_from_mul, rules(), "(+ ?a (* -1 ?b))" => "(- ?a ?b)"}
+
+test_fn! {math_div_cancel, rules(), "(/ x x)" => "1"}
 
 // const prop
 test_fn! {math_const_prop, rules(), "(+ 1 (+ 2 3))" => "6"}
