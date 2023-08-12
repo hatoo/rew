@@ -3,7 +3,7 @@ use egg::{rewrite as rw, *};
 use flat_vec::flat_vec;
 use num::Zero;
 use num_rational::BigRational;
-use num_traits::pow::Pow;
+use num_traits::{pow::Pow, One};
 
 define_language! {
     pub enum Math {
@@ -83,7 +83,8 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         // mul
         rw!("[mul] commutative law"; "(* ?a ?b)" => "(* ?b ?a)"),
         rw!("[mul] associative property"; "(* ?a (* ?b ?c))" => "(* (* ?a ?b) ?c)"),
-        flat rw!("[mul] identity"; "(* ?a 1)" <=> "?a"),
+        // rw!("[mul] identity"; "(* ?a 1)" => "?a"),
+        rw!("[mul] identity rev"; "?a" => "(* ?a 1)" if is_not_one("?a")),
         rw!("[mul] zero"; "(* ?a 0)" => "0"),
         flat rw!("[mul] distribution"; "(* ?a (+ ?b ?c))" <=> "(+ (* ?a ?b) (* ?a ?c))"),
         // sub
@@ -92,7 +93,8 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         // div
         flat rw!("[div] to expt"; "(/ ?a ?b)" <=> "(* ?a (expt ?b -1))"),
         // expt
-        flat rw!("[expt] identity"; "(expt ?a 1)" <=> "?a"),
+        // rw!("[expt] identity"; "(expt ?a 1)" => "?a"),
+        rw!("[expt] identity rev"; "?a" => "(expt ?a 1)" if is_not_one("?a")),
         rw!("[expt] zero"; "(expt ?a 0)" => "1"),
         rw!("[expt] mul"; "(* (expt ?a ?b) (expt ?a ?c))" => "(expt ?a (+ ?b ?c))"),
         // sqrt
@@ -103,6 +105,12 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
     ]
 }
 
+fn is_not_one(var: &'static str) -> impl Fn(&mut EGraph<Math, MathAnalysis>, Id, &Subst) -> bool {
+    let var = var.parse().unwrap();
+    let one = Math::Num(BigRational::one());
+    move |egraph, _, subst| !egraph[subst[var]].nodes.contains(&one)
+}
+
 /*
 fn is_not_zero(var: &'static str) -> impl Fn(&mut EGraph<Math, MathAnalysis>, Id, &Subst) -> bool {
     let var = var.parse().unwrap();
@@ -110,6 +118,52 @@ fn is_not_zero(var: &'static str) -> impl Fn(&mut EGraph<Math, MathAnalysis>, Id
     move |egraph, _, subst| !egraph[subst[var]].nodes.contains(&zero)
 }
 */
+
+#[test]
+fn cant_infer_from_rest() {
+    for i in 0.. {
+        let mut rules = rules();
+
+        if i >= rules.len() {
+            break;
+        }
+
+        let rule = rules.swap_remove(i);
+
+        let start: RecExpr<Math> = rule
+            .searcher
+            .get_pattern_ast()
+            .unwrap()
+            .pretty(80)
+            .parse()
+            .unwrap();
+
+        let end: RecExpr<Math> = rule
+            .applier
+            .get_pattern_ast()
+            .unwrap()
+            .pretty(80)
+            .parse()
+            .unwrap();
+
+        let runner = Runner::default()
+            .with_explanations_enabled()
+            .with_expr(&start);
+
+        let start_id = runner.egraph.find(*runner.roots.last().unwrap());
+
+        let mut runner = runner.run(&rules);
+
+        let end_id = runner.egraph.add_expr(&end);
+
+        assert!(
+            runner.egraph.find(start_id) != runner.egraph.find(end_id),
+            "rule {:?} can be infered from the rest\n{}",
+            &rule,
+            runner.explain_equivalence(&start, &end).get_flat_string()
+        )
+    }
+}
 
 // add
 // Currently, the following rules are directly written in the rules() but perhaps we can describe it in a less number of rules.
@@ -166,6 +220,8 @@ fn main() {
     let (_best_cost, bext_expr) = extractor.find_best(runner.roots[0]);
 
     if opts.verbose {
+        eprintln!("{}", runner.report());
+
         eprintln!(
             "{}",
             runner
