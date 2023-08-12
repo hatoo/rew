@@ -117,7 +117,6 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         flat rw!("[mul] distribution"; "(* ?a (+ ?b ?c))" <=> "(+ (* ?a ?b) (* ?a ?c))"),
         // sub
         flat rw!("[sub] to mul"; "(- ?a ?b)" <=> "(+ ?a (* -1 ?b))"),
-        rw!("[sub] cancel"; "(+ ?a (* -1 ?a))" => "0"),
         flat rw!("[sub] shorten"; "(- 0 ?a)" <=> "(- ?a)"),
         // rw!("[sub] cancel"; "(+ ?a (- ?b ?a))" => "?b"),
         // rw!("[sub] inv inv"; "(- 0 (- 0 ?a))" => "?a"),
