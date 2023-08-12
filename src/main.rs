@@ -114,7 +114,7 @@ pub fn rules() -> Vec<Rewrite<Math, MathAnalysis>> {
         rw!("[mul] associative property"; "(* ?a (* ?b ?c))" => "(* (* ?a ?b) ?c)"),
         flat rw!("[mul] identity"; "(* ?a 1)" <=> "?a"),
         rw!("[mul] zero"; "(* ?a 0)" => "0"),
-        rw!("[mul] distribution"; "(* ?a (+ ?b ?c))" => "(+ (* ?a ?b) (* ?a ?c))"),
+        flat rw!("[mul] distribution"; "(* ?a (+ ?b ?c))" <=> "(+ (* ?a ?b) (* ?a ?c))"),
         // sub
         flat rw!("[sub] to mul"; "(- ?a ?b)" <=> "(+ ?a (* -1 ?b))"),
         rw!("[sub] cancel"; "(+ ?a (* -1 ?a))" => "0"),
@@ -178,16 +178,33 @@ test_fn! {math_partial_eval, rules(), "(* 4 (* 2 x))" => "(* 8 x)"}
 #[derive(Debug, Parser)]
 struct Opts {
     formula: RecExpr<Math>,
+    #[clap(short, long)]
+    verbose: bool,
 }
 
 fn main() {
     let opts = Opts::parse();
     let rules = rules();
-    let runner = Runner::default().with_expr(&opts.formula).run(&rules);
+    let runner = if opts.verbose {
+        Runner::default().with_explanations_enabled()
+    } else {
+        Runner::default()
+    };
+
+    let mut runner = runner.with_expr(&opts.formula).run(&rules);
 
     let extractor = Extractor::new(&runner.egraph, AstSize);
 
     let (_best_cost, bext_expr) = extractor.find_best(runner.roots[0]);
+
+    if opts.verbose {
+        eprintln!(
+            "{}",
+            runner
+                .explain_equivalence(&opts.formula, &bext_expr)
+                .get_flat_string()
+        );
+    }
 
     println!("{}", bext_expr.pretty(80));
 }
