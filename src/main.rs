@@ -148,13 +148,14 @@ fn is_not_zero(var: &'static str) -> impl Fn(&mut EGraph<Math, MathAnalysis>, Id
 // add
 // Currently, the following rules are directly written in the rules() but perhaps we can describe it in a less number of rules.
 test_fn! {math_add_const, rules(), "(+ 1 2)" => "3"}
-// https://ja.wikipedia.org/wiki/%E5%8A%A0%E6%B3%95
 test_fn! {math_add_comm, rules(), "(+ x y)" => "(+ y x)"}
-test_fn! {math_add_assoc, rules(), "(+ (+ x y) z)" => "(+ x (+ y z))"}
+test_fn! {math_add_assoc_lr, rules(), "(+ (+ x y) z)" => "(+ x (+ y z))"}
+test_fn! {math_add_assoc_rl, rules(), "(+ x (+ y z))" => "(+ (+ x y) z)"}
 test_fn! {math_add_id, rules(), "(+ x 0)" => "x"}
 test_fn! {math_add_inv, rules(), "(+ x (- y x))" => "y"}
 
 test_fn! {math_sub_cancel, rules(), "(- (+ a b) a)" => "b"}
+test_fn! {math_sub_cancel2, rules(), "(- (+ (+ a b) (+ c d)) a)" => "(+ b (+ c d))"}
 test_fn! {math_sub_id, rules(), "(- a 0)" => "a"}
 test_fn! {math_sub_sub, rules(), "(- 0 (- 0 a))" => "a"}
 test_fn! {math_sub_sub2, rules(), "(- b (- 0 a))" => "(+ a b)"}
